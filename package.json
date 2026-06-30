@@ -1,0 +1,11 @@
+{
+  "name": "designspiration",
+  "private": true,
+  "scripts": {
+    "dev": "serve gallery -l 3000",
+    "start": "serve gallery -l 3000"
+  },
+  "devDependencies": {
+    "serve": "^14.2.4"
+  }
+}
