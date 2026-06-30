@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Design Inspiration Library</title>
+<style>
+  :root {
+    --cream:   #f3ede1;
+    --ink:     #16130f;
+    --red:     #c1121f;
+    --muted:   #6b6258;
+    --line:    #e0d8c8;
+    --card:    #ffffff;
+    --radius:  12px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--cream);
+    color: var(--ink);
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    padding: 32px 24px 64px;
+  }
+  header {
+    max-width: 1200px;
+    margin: 0 auto 48px;
+    border-bottom: 1.5px solid var(--ink);
+    padding-bottom: 20px;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  header h1 {
+    font-size: 22px;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+  }
+  header span {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: monospace;
+  }
+  #search-wrap {
+    max-width: 1200px;
+    margin: 0 auto 36px;
+  }
+  #search {
+    width: 100%;
+    max-width: 360px;
+    padding: 8px 14px;
+    border: 1.5px solid var(--ink);
+    border-radius: 6px;
+    background: var(--cream);
+    font: inherit;
+    font-size: 13px;
+    outline: none;
+  }
+  #search:focus { border-color: var(--red); }
+  #gallery { max-width: 1200px; margin: 0 auto; }
+  .section-block { margin-bottom: 56px; }
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    border-bottom: 1.5px solid var(--ink);
+    padding-bottom: 8px;
+    margin-bottom: 20px;
+  }
+  .section-header h2 {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .section-header .count {
+    font-family: monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+  }
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(22,19,15,.08);
+    transition: transform .15s ease, box-shadow .15s ease;
+    display: flex;
+    flex-direction: column;
+  }
+  .card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(22,19,15,.13);
+  }
+  .card-img {
+    aspect-ratio: 4/3;
+    overflow: hidden;
+    background: var(--line);
+    flex-shrink: 0;
+  }
+  .card-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .card-body {
+    padding: 14px 16px 16px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .card-title {
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+  }
+  .card-desc {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+    flex: 1;
+  }
+  .card-link {
+    margin-top: 8px;
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--red);
+    text-decoration: none;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .card-link:hover { text-decoration: underline; }
+  #status {
+    text-align: center;
+    padding: 64px 0;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .hidden { display: none !important; }
+  @media (max-width: 480px) {
+    body { padding: 20px 14px 48px; }
+    header h1 { font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Design Inspiration</h1>
+  <span id="total-count">loading…</span>
+</header>
+
+<div id="search-wrap">
+  <input id="search" type="search" placeholder="Filter cards…" autocomplete="off">
+</div>
+
+<div id="gallery"></div>
+<div id="status">Loading…</div>
+
+<script>
+const SUPABASE_URL = 'https://hxxcwswrwgftolfbuosf.supabase.co';
+const ANON_KEY    = 'sb_publishable_GJkQX8HfXOOcyQgLHYF0Fg_TDAadrX1';
+const BUCKET_URL  = `${SUPABASE_URL}/storage/v1/object/public/inspirations`;
+
+async function fetchAll() {
+  const rows = [];
+  let offset = 0;
+  const limit = 1000;
+  while (true) {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/inspirations?select=*&order=section,title&limit=${limit}&offset=${offset}`,
+      { headers: { apikey: ANON_KEY, Authorization: `Bearer ${ANON_KEY}` } }
+    );
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const page = await res.json();
+    rows.push(...page);
+    if (page.length < limit) break;
+    offset += limit;
+  }
+  return rows;
+}
+
+function imgUrl(path) {
+  return `${BUCKET_URL}/${path}`;
+}
+
+function cardHTML(row) {
+  const src = imgUrl(row.image_path);
+  const link = row.source_url
+    ? `<a class="card-link" href="${esc(row.source_url)}" target="_blank" rel="noopener">view source ↗</a>`
+    : '';
+  return `
+    <div class="card" data-search="${esc((row.title + ' ' + (row.description||'')).toLowerCase())}">
+      <div class="card-img"><img src="${esc(src)}" alt="${esc(row.title)}" loading="lazy"></div>
+      <div class="card-body">
+        <div class="card-title">${esc(row.title)}</div>
+        ${row.description ? `<div class="card-desc">${esc(row.description)}</div>` : ''}
+        ${link}
+      </div>
+    </div>`;
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function render(rows) {
+  const gallery = document.getElementById('gallery');
+  const status  = document.getElementById('status');
+  const counter = document.getElementById('total-count');
+
+  if (!rows.length) {
+    status.textContent = 'No cards found.';
+    return;
+  }
+
+  status.classList.add('hidden');
+  counter.textContent = `${rows.length} cards`;
+
+  // group by section preserving order of first appearance
+  const sections = [];
+  const map = {};
+  for (const r of rows) {
+    const s = r.section || 'Other';
+    if (!map[s]) { map[s] = []; sections.push(s); }
+    map[s].push(r);
+  }
+
+  gallery.innerHTML = sections.map(s => `
+    <div class="section-block" data-section="${esc(s)}">
+      <div class="section-header">
+        <h2>${esc(s)}</h2>
+        <span class="count">${map[s].length}</span>
+      </div>
+      <div class="card-grid">
+        ${map[s].map(cardHTML).join('')}
+      </div>
+    </div>`).join('');
+}
+
+// live search
+document.getElementById('search').addEventListener('input', e => {
+  const q = e.target.value.trim().toLowerCase();
+  document.querySelectorAll('.card').forEach(c => {
+    c.classList.toggle('hidden', q !== '' && !c.dataset.search.includes(q));
+  });
+  document.querySelectorAll('.section-block').forEach(b => {
+    const visible = [...b.querySelectorAll('.card')].some(c => !c.classList.contains('hidden'));
+    b.classList.toggle('hidden', !visible);
+  });
+});
+
+fetchAll()
+  .then(render)
+  .catch(err => {
+    document.getElementById('status').textContent = `Error: ${err.message}`;
+  });
+</script>
+</body>
+</html>
