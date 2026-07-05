@@ -1,0 +1,19 @@
+{
+  "name": "desinsp",
+  "version": "1.0.0",
+  "description": "Design inspiration uploader",
+  "main": "upload.mjs",
+  "scripts": {
+    "start": "python3 -m http.server 4173",
+    "upload": "node upload.mjs",
+    "upload:dinsp": "node upload.mjs --manifest /Users/ekaterinashevyakova/Downloads/manifest.json --images-dir /Users/ekaterinashevyakova/Documents/dinsp"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.110.0",
+    "dotenv": "^17.4.2"
+  }
+}
