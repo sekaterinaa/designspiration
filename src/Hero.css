@@ -1,0 +1,177 @@
+.hero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  color: #fff;
+  background-image:
+    linear-gradient(90deg, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0.2) 100%),
+    linear-gradient(180deg, rgb(76, 91, 96) 0%, rgb(189, 198, 197) 100%);
+  overflow: hidden;
+}
+
+/* ---------- nav ---------- */
+
+.hero__nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  max-width: 780px;
+  width: 100%;
+  margin: 0 auto;
+  padding: clamp(20px, 4vh, 34px) 20px 0;
+}
+
+.hero__logo {
+  font-family: "Inter", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.hero__links {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hero__link {
+  color: #fff;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  padding: 9px;
+  white-space: nowrap;
+  opacity: 0.92;
+  transition: opacity 0.15s ease;
+}
+
+.hero__link:hover {
+  opacity: 1;
+}
+
+.hero__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hero__icon-btn,
+.hero__lang-btn,
+.hero__menu-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  font-family: inherit;
+}
+
+.hero__icon-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+}
+
+.hero__lang-btn {
+  height: 32px;
+  gap: 6px;
+  padding: 0 13px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+.hero__menu-btn {
+  width: 44px;
+  height: 32px;
+  border-radius: 999px;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.hero__menu-btn span {
+  width: 16px;
+  height: 1.5px;
+  background: #d9d9d9;
+  border-radius: 1px;
+}
+
+/* ---------- headline ---------- */
+
+.hero__content {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  padding: clamp(32px, 11vh, 96px) 24px 0;
+}
+
+.hero__headline {
+  margin: 0;
+  max-width: clamp(280px, 26vw, 420px);
+  font-family: "PT Serif", Georgia, serif;
+  font-weight: 400;
+  font-size: clamp(22px, 2.7vw, 34px);
+  line-height: 1.14;
+  letter-spacing: -0.05em;
+  text-align: center;
+}
+
+/* ---------- discover cta ---------- */
+
+.hero__cta {
+  display: flex;
+  justify-content: center;
+  padding: 0 24px clamp(28px, 6vh, 56px);
+}
+
+.hero__discover {
+  position: relative;
+  border: none;
+  cursor: pointer;
+  padding: 16px 44px;
+  border-radius: 999px;
+  background: #262f31;
+  color: #fff;
+  font-family: "PT Serif", Georgia, serif;
+  font-size: 18px;
+  letter-spacing: -0.02em;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 12px 30px rgba(0, 0, 0, 0.4),
+    0 0 70px 14px rgba(255, 255, 255, 0.1);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.hero__discover:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 14px 34px rgba(0, 0, 0, 0.45),
+    0 0 80px 18px rgba(255, 255, 255, 0.14);
+}
+
+/* ---------- responsive ---------- */
+
+@media (max-width: 720px) {
+  .hero__links {
+    display: none;
+  }
+}
+
+@media (max-width: 360px) {
+  .hero__actions {
+    gap: 6px;
+  }
+
+  .hero__lang-btn {
+    padding: 0 10px;
+  }
+}
