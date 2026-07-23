@@ -5,6 +5,7 @@
   const canvas = document.getElementById("board");
   const ctx = canvas.getContext("2d");
   const CSS_SIZE = canvas.width; // internal pixel resolution (square)
+  const SCREEN_BASE = "#dfe3e6";
 
   // ---- State ----
   const state = {
@@ -15,6 +16,7 @@
     pixels: [],        // flat array of color strings or null
     drawing: false,
     lastCell: -1,
+    eraseHigh: 0,      // 0..1, furthest the eraser slider has swept
   };
 
   const undoStack = [];
@@ -42,8 +44,7 @@
     const cs = cellSize();
     ctx.clearRect(0, 0, CSS_SIZE, CSS_SIZE);
 
-    // base screen color
-    ctx.fillStyle = "#bfc4b3";
+    ctx.fillStyle = SCREEN_BASE;
     ctx.fillRect(0, 0, CSS_SIZE, CSS_SIZE);
 
     for (let i = 0; i < state.pixels.length; i++) {
@@ -124,7 +125,7 @@
     }
   }
 
-  // ---- Pointer events ----
+  // ---- Pointer events (drawing) ----
   canvas.addEventListener("pointerdown", (e) => {
     e.preventDefault();
     try { canvas.setPointerCapture(e.pointerId); } catch (_) { /* ignore */ }
@@ -155,21 +156,91 @@
     render();
   }
 
-  // Shake to erase
-  const shakeBtn = document.getElementById("shakeBtn");
-  const doodleEl = document.querySelector(".doodle");
-  shakeBtn.addEventListener("click", () => {
+  // ---- Sliding eraser (mimics the real toy's wipe bar) ----
+  const eraseTrack = document.getElementById("eraseTrack");
+  const eraseThumb = document.getElementById("eraseThumb");
+  let sweeping = false;
+
+  function setThumb(frac) {
+    eraseThumb.style.left = (frac * 100) + "%";
+    eraseThumb.setAttribute("aria-valuenow", Math.round(frac * 100));
+  }
+
+  function sweepTo(frac) {
+    if (frac <= state.eraseHigh) return;
+    state.eraseHigh = frac;
+    const col = Math.floor(frac * state.grid);
+    for (let c = 0; c < col; c++) {
+      for (let r = 0; r < state.grid; r++) {
+        state.pixels[r * state.grid + c] = null;
+      }
+    }
+    render();
+  }
+
+  function moveThumb(frac) {
+    frac = Math.max(0, Math.min(1, frac));
+    eraseThumb.classList.remove("snapping");
+    setThumb(frac);
+    sweepTo(frac);
+    if (frac >= 0.96) {
+      eraseThumb.classList.add("snapping");
+      setTimeout(() => {
+        newBoard(null);
+        state.eraseHigh = 0;
+        setThumb(0);
+        render();
+      }, 350);
+    }
+  }
+
+  function fracFromEvent(e) {
+    const rect = eraseTrack.getBoundingClientRect();
+    return (e.clientX - rect.left) / rect.width;
+  }
+
+  eraseThumb.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    try { eraseThumb.setPointerCapture(e.pointerId); } catch (_) { /* ignore */ }
     pushUndo();
-    doodleEl.classList.remove("shaking");
-    void doodleEl.offsetWidth; // reflow to restart animation
-    doodleEl.classList.add("shaking");
-    // erase mid-shake for the classic effect
-    setTimeout(() => { newBoard(null); render(); }, 180);
-    setTimeout(() => doodleEl.classList.remove("shaking"), 550);
+    sweeping = true;
+  });
+  eraseThumb.addEventListener("pointermove", (e) => {
+    if (!sweeping) return;
+    moveThumb(fracFromEvent(e));
+  });
+  const endSweep = () => { sweeping = false; };
+  eraseThumb.addEventListener("pointerup", endSweep);
+  eraseThumb.addEventListener("pointercancel", endSweep);
+
+  eraseThumb.addEventListener("keydown", (e) => {
+    const step = 0.08;
+    if (e.key === "ArrowRight" || e.key === "ArrowUp") {
+      e.preventDefault();
+      pushUndo();
+      moveThumb((state.eraseHigh || 0) + step);
+    } else if (e.key === "ArrowLeft" || e.key === "ArrowDown") {
+      e.preventDefault();
+      setThumb(Math.max(0, (state.eraseHigh || 0) - step));
+    }
+  });
+
+  // ---- Stamps: quick ink colors, styled after the toy's rubber stamps ----
+  document.querySelectorAll(".stamp, .letter-bubble").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      state.color = btn.dataset.color;
+      state.tool = "pen";
+    });
+  });
+
+  // ---- Stylus: switches back to the pen tool ----
+  document.getElementById("stylusBtn").addEventListener("click", () => {
+    state.tool = "pen";
   });
 
   // Keyboard shortcuts: B pen, E eraser, F fill, I eyedropper, Ctrl/Cmd Z undo/redo
   window.addEventListener("keydown", (e) => {
+    if (document.activeElement === eraseThumb) return;
     const mod = e.ctrlKey || e.metaKey;
     if (mod && e.key.toLowerCase() === "z") {
       e.preventDefault();

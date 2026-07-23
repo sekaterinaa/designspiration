@@ -9,21 +9,45 @@
 <body>
   <div class="app">
     <div class="doodle">
-      <div class="doodle-top">
-        <div class="doodle-sliders">
-          <span class="slider"></span>
-          <span class="slider"></span>
-        </div>
-        <div class="doodle-brand">MAGNA · PIXEL</div>
+      <div class="handle" aria-hidden="true"></div>
+      <div class="puzzle-badge" aria-hidden="true"></div>
+
+      <div class="letter-bubbles">
+        <button class="letter-bubble b" data-color="#f5c344" title="Gold ink">B</button>
+        <button class="letter-bubble c" data-color="#ff6f59" title="Coral ink">C</button>
       </div>
-      <div class="doodle-screen">
-        <canvas id="board" width="512" height="512"></canvas>
-      </div>
-      <div class="doodle-bottom">
-        <button id="shakeBtn" class="shake-knob" title="Shake to erase everything">
-          <span class="knob-face">⟳</span>
-          <span class="knob-label">Shake&nbsp;to&nbsp;erase</span>
+
+      <div class="stamps-rail">
+        <button class="stamp pinwheel" data-color="#e0559b" title="Magenta ink">
+          <span></span><span></span><span></span><span></span><span></span>
         </button>
+        <button class="stamp gray-dot" data-color="#9aa1ab" title="Gray ink"></button>
+        <button class="stamp black-dot" data-color="#1c1f26" title="Black ink"></button>
+      </div>
+
+      <div class="stylus-rail">
+        <svg class="stylus-cord" width="34" height="46" viewBox="0 0 34 46" aria-hidden="true">
+          <path d="M4 2 C 26 2, 4 12, 26 14 C 4 16, 26 24, 12 28 C 2 30, 20 36, 10 40"
+                fill="none" stroke="#161a22" stroke-width="2.5" stroke-linecap="round" />
+        </svg>
+        <button class="stylus-btn" id="stylusBtn" title="Pen">
+          <div class="pen-body"></div>
+          <div class="pen-tip"></div>
+        </button>
+      </div>
+
+      <div class="yellow-frame">
+        <div class="number-strip" aria-hidden="true">
+          <span>0</span><span>1</span><span>2</span><span>3</span><span>4</span>
+          <span>5</span><span>6</span><span>7</span><span>8</span><span>9</span>
+        </div>
+        <div class="doodle-screen">
+          <canvas id="board" width="512" height="512"></canvas>
+          <div class="erase-track" id="eraseTrack">
+            <div class="erase-thumb" id="eraseThumb" role="slider" tabindex="0"
+                 aria-label="Slide to erase" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
+          </div>
+        </div>
       </div>
     </div>
   </div>

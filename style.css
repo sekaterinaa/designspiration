@@ -1,11 +1,26 @@
 :root {
-  --bg: #0f1226;
-  --text: #e8eaff;
-  --doodle-red: #e23b3b;
-  --doodle-red-dark: #b32626;
-  --doodle-screen: #cfd3c4;
-  --doodle-screen-2: #bfc4b3;
-  --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  --page-bg: #0f1226;
+
+  --plastic-blue: #3f7deb;
+  --plastic-blue-mid: #2f62c9;
+  --plastic-blue-dark: #1c3f8f;
+
+  --sun-yellow: #ffd23d;
+  --yellow-dark: #f0b429;
+
+  --screen-base: #dfe3e6;
+  --screen-highlight: #eef1f3;
+  --screen-shadow: #c7ccd1;
+
+  --ink-navy: #16264d;
+
+  --stamp-gold: #f5c344;
+  --stamp-coral: #ff6f59;
+  --stamp-magenta: #e0559b;
+  --stamp-gray: #9aa1ab;
+  --stamp-black: #1c1f26;
+
+  --puzzle-teal: #33b7a6;
 }
 
 * { box-sizing: border-box; }
@@ -13,51 +28,140 @@
 html, body {
   margin: 0;
   height: 100%;
-  font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
-  color: var(--text);
-  background: radial-gradient(1200px 600px at 20% -10%, #23285a 0%, var(--bg) 55%);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: #e8eaff;
+  background: radial-gradient(1200px 600px at 20% -10%, #23285a 0%, var(--page-bg) 55%);
 }
 
 .app {
   min-height: 100vh;
-  padding: 24px 20px;
+  padding: 90px 20px 60px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-/* Magna Doodle */
+button { font: inherit; }
+
+/* ---------- Blue plastic body ---------- */
 .doodle {
+  position: relative;
   width: 100%;
-  max-width: 560px;
-  background: linear-gradient(180deg, var(--doodle-red) 0%, var(--doodle-red-dark) 100%);
-  border-radius: 30px;
-  padding: 22px;
-  box-shadow: var(--shadow), inset 0 2px 6px rgba(255,255,255,.25);
+  max-width: 620px;
+  padding: 34px 80px 60px;
+  background: linear-gradient(160deg, var(--plastic-blue) 0%, var(--plastic-blue-mid) 70%, var(--plastic-blue-dark) 100%);
+  border-radius: 42px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45), inset 0 2px 3px rgba(255, 255, 255, 0.35);
 }
 
-.doodle-top {
+/* Carrying handle: a hollow arch made from a thick border with no bottom edge */
+.handle {
+  position: absolute;
+  top: -46px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 132px;
+  height: 68px;
+  border: 17px solid var(--plastic-blue-dark);
+  border-bottom: none;
+  border-radius: 70px 70px 0 0 / 68px 68px 0 0;
+  box-shadow: inset 0 2px 2px rgba(255, 255, 255, 0.25);
+}
+
+/* Puzzle-piece badge, top right: a rounded square with a tab and a notch */
+.puzzle-badge {
+  position: absolute;
+  top: 16px;
+  right: 22px;
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(160deg, #4fd0bf, var(--puzzle-teal));
+  border-radius: 7px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+.puzzle-badge::before,
+.puzzle-badge::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  transform: translateY(-50%);
+}
+.puzzle-badge::before {
+  left: -6px;
+  background: #4fd0bf;
+}
+.puzzle-badge::after {
+  right: -6px;
+  background: var(--plastic-blue-mid);
+}
+
+/* Two overlapping letter bubbles, top left */
+.letter-bubbles {
+  position: absolute;
+  top: 14px;
+  left: 16px;
+  width: 54px;
+  height: 46px;
+}
+.letter-bubble {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-weight: 800;
+  font-family: "Arial Rounded MT Bold", system-ui, sans-serif;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  border: none;
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+.letter-bubble:hover { transform: scale(1.08); }
+.letter-bubble.b {
+  top: 0; left: 0;
+  width: 30px; height: 30px;
+  background: var(--stamp-gold);
+  color: var(--ink-navy);
+  font-size: 15px;
+  z-index: 2;
+}
+.letter-bubble.c {
+  bottom: 0; right: 0;
+  width: 26px; height: 26px;
+  background: var(--stamp-coral);
+  color: #fff;
+  font-size: 13px;
+}
+
+/* ---------- Yellow inner frame ---------- */
+.yellow-frame {
+  background: linear-gradient(180deg, var(--sun-yellow) 0%, var(--yellow-dark) 100%);
+  border-radius: 24px;
+  padding: 14px 16px 18px;
+  box-shadow: inset 0 2px 3px rgba(255, 255, 255, 0.6), inset 0 -4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.number-strip {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  padding: 0 6px 14px;
-}
-.doodle-sliders { display: flex; gap: 8px; }
-.slider {
-  width: 34px; height: 12px; border-radius: 8px;
-  background: linear-gradient(180deg, #ffd23f, #e6a700);
-  box-shadow: inset 0 1px 2px rgba(0,0,0,.3);
-}
-.doodle-brand {
-  font-weight: 800; letter-spacing: 2px; font-size: 13px;
-  color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.35);
+  padding: 0 6px 10px;
+  color: var(--ink-navy);
+  font-family: "Arial Rounded MT Bold", system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: 0.5px;
+  user-select: none;
 }
 
+/* ---------- Screen ---------- */
 .doodle-screen {
-  background: var(--doodle-screen);
+  position: relative;
+  background: radial-gradient(120% 100% at 30% 0%, var(--screen-highlight) 0%, var(--screen-base) 55%, var(--screen-shadow) 100%);
   border-radius: 14px;
   padding: 14px;
-  box-shadow: inset 0 4px 14px rgba(0,0,0,.35);
+  box-shadow: inset 0 6px 16px rgba(0, 0, 0, 0.35);
 }
 #board {
   width: 100%;
@@ -65,45 +169,141 @@ html, body {
   display: block;
   image-rendering: pixelated;
   border-radius: 6px;
-  background: var(--doodle-screen-2);
   cursor: crosshair;
   touch-action: none;
 }
 
-.doodle-bottom {
-  display: flex;
-  justify-content: center;
-  padding-top: 16px;
+/* Sliding eraser track + thumb, beneath the screen */
+.erase-track {
+  position: relative;
+  margin-top: 14px;
+  height: 16px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #b9bfc7, #8f97a1);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.35);
 }
-.shake-knob {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 18px 10px 12px;
-  background: linear-gradient(180deg, #f5f5f0, #d9d9cf);
-  border: none;
-  border-radius: 40px;
-  cursor: pointer;
-  box-shadow: 0 4px 10px rgba(0,0,0,.3);
-  transition: transform .08s ease;
-}
-.shake-knob:hover { transform: scale(1.03); }
-.shake-knob:active { transform: scale(.97); }
-.knob-face {
-  width: 34px; height: 34px;
-  display: grid; place-items: center;
+.erase-thumb {
+  position: absolute;
+  top: 50%;
+  left: 0%;
+  width: 36px;
+  height: 36px;
+  margin-left: -2px;
   border-radius: 50%;
-  background: linear-gradient(180deg, #444, #111);
-  color: #fff; font-size: 18px;
+  background: radial-gradient(circle at 35% 30%, #ffffff, #cfd4da 55%, #a7adb6 100%);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.45);
+  transform: translate(0, -50%);
+  cursor: grab;
+  touch-action: none;
 }
-.knob-label { font-weight: 700; color: #333; font-size: 13px; }
+.erase-thumb:active { cursor: grabbing; }
+.erase-thumb.snapping { transition: left 0.4s ease; }
+.erase-thumb:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 2px;
+}
 
-@keyframes shake {
-  0%,100% { transform: translate(0,0) rotate(0); }
-  20% { transform: translate(-8px,4px) rotate(-1deg); }
-  40% { transform: translate(8px,-4px) rotate(1deg); }
-  60% { transform: translate(-6px,3px) rotate(-1deg); }
-  80% { transform: translate(6px,-3px) rotate(1deg); }
+/* ---------- Left stamp rail ---------- */
+.stamps-rail {
+  position: absolute;
+  left: 18px;
+  top: 46%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
 }
-.doodle.shaking { animation: shake .5s ease; }
-@media (prefers-reduced-motion: reduce) { .doodle.shaking { animation: none; } }
+.stamp {
+  border: none;
+  cursor: pointer;
+  border-radius: 50%;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35);
+  transition: transform 0.12s ease;
+  position: relative;
+}
+.stamp:hover { transform: scale(1.08); }
+.stamp:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+
+.stamp.pinwheel {
+  width: 38px; height: 38px;
+  background: #fff;
+}
+.stamp.pinwheel span {
+  position: absolute;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  top: 50%; left: 50%;
+}
+.stamp.pinwheel span:nth-child(1) { background: var(--stamp-magenta); transform: translate(-90%, -90%); }
+.stamp.pinwheel span:nth-child(2) { background: var(--stamp-gold); transform: translate(-10%, -90%); }
+.stamp.pinwheel span:nth-child(3) { background: var(--puzzle-teal); transform: translate(-90%, -10%); }
+.stamp.pinwheel span:nth-child(4) { background: var(--stamp-coral); transform: translate(-10%, -10%); }
+.stamp.pinwheel span:nth-child(5) {
+  width: 10px; height: 10px;
+  background: var(--ink-navy);
+  transform: translate(-50%, -50%);
+}
+
+.stamp.gray-dot {
+  width: 30px; height: 30px;
+  background: radial-gradient(circle at 35% 30%, #c9ced4, var(--stamp-gray) 70%);
+}
+.stamp.black-dot {
+  width: 30px; height: 30px;
+  background: radial-gradient(circle at 35% 30%, #3a3f47, var(--stamp-black) 70%);
+}
+
+/* ---------- Right stylus ---------- */
+.stylus-rail {
+  position: absolute;
+  right: 14px;
+  top: 34%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.stylus-cord {
+  display: block;
+  overflow: visible;
+}
+.stylus-btn {
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  transform: rotate(16deg);
+  transform-origin: top center;
+  transition: transform 0.15s ease;
+}
+.stylus-btn:hover { transform: rotate(10deg) scale(1.04); }
+.stylus-btn:focus-visible { outline: 3px solid #fff; outline-offset: 3px; border-radius: 8px; }
+.pen-body {
+  width: 18px;
+  height: 60px;
+  border-radius: 9px 9px 3px 3px;
+  background: linear-gradient(180deg, #f2f5f8, #c9d1db);
+  box-shadow: inset -2px 0 3px rgba(0, 0, 0, 0.15), 0 3px 5px rgba(0, 0, 0, 0.3);
+  margin: 0 auto;
+}
+.pen-tip {
+  width: 0; height: 0;
+  margin: 0 auto;
+  border-left: 9px solid transparent;
+  border-right: 9px solid transparent;
+  border-top: 15px solid var(--stamp-coral);
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.3));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .letter-bubble, .stamp, .stylus-btn { transition: none; }
+}
+
+/* ---------- Small screens: shrink bezel so rails don't crowd the canvas ---------- */
+@media (max-width: 560px) {
+  .doodle { padding: 30px 50px 50px; }
+  .stamps-rail { left: 8px; }
+  .stylus-rail { right: 4px; }
+  .stamp.pinwheel { width: 30px; height: 30px; }
+  .stamp.gray-dot, .stamp.black-dot { width: 24px; height: 24px; }
+  .pen-body { width: 14px; height: 46px; }
+}
