@@ -167,7 +167,6 @@ button { font: inherit; }
   width: 100%;
   height: auto;
   display: block;
-  image-rendering: pixelated;
   border-radius: 6px;
   cursor: crosshair;
   touch-action: none;

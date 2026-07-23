@@ -1,4 +1,4 @@
-/* Pixel Doodle — a Magna-Doodle-style pixel art tool */
+/* Pixel Doodle — a Magna-Doodle-style hexagonal pixel art tool */
 (() => {
   "use strict";
 
@@ -7,13 +7,44 @@
   const CSS_SIZE = canvas.width; // internal pixel resolution (square)
   const SCREEN_BASE = "#dfe3e6";
 
+  // ---- Hex grid geometry (flat-top hexagons, "odd-q" column offset) ----
+  const SQRT3 = Math.sqrt(3);
+  const COLS = 16;
+  const ROWS = 14;
+
+  // Pick the largest hex radius that lets COLS columns / ROWS rows fit
+  // inside the square canvas, then center whichever axis has slack.
+  const sizeFromWidth = CSS_SIZE / (2 + 1.5 * (COLS - 1));
+  const sizeFromHeight = CSS_SIZE / (SQRT3 * (ROWS + 0.5));
+  const HEX = Math.min(sizeFromWidth, sizeFromHeight);
+  const GRID_W = 2 * HEX + 1.5 * HEX * (COLS - 1);
+  const GRID_H = SQRT3 * HEX * (ROWS + 0.5);
+  const ORIGIN_X = (CSS_SIZE - GRID_W) / 2 + HEX;
+  const ORIGIN_Y = (CSS_SIZE - GRID_H) / 2 + (SQRT3 * HEX) / 2;
+
+  const DIRS = [[1, 0], [1, -1], [0, -1], [-1, 0], [-1, 1], [0, 1]];
+
+  function hexCenter(col, row) {
+    const x = ORIGIN_X + HEX * 1.5 * col;
+    const y = ORIGIN_Y + HEX * SQRT3 * row + (col & 1 ? (HEX * SQRT3) / 2 : 0);
+    return [x, y];
+  }
+
+  function cubeRound(x, y, z) {
+    let rx = Math.round(x), ry = Math.round(y), rz = Math.round(z);
+    const dx = Math.abs(rx - x), dy = Math.abs(ry - y), dz = Math.abs(rz - z);
+    if (dx > dy && dx > dz) rx = -ry - rz;
+    else if (dy > dz) ry = -rx - rz;
+    else rz = -rx - ry;
+    return [rx, ry, rz];
+  }
+
   // ---- State ----
   const state = {
-    grid: 16,
     tool: "pen",
     color: "#111111",
     showGrid: true,
-    pixels: [],        // flat array of color strings or null
+    pixels: [],        // flat array (row * COLS + col) of color strings or null
     drawing: false,
     lastCell: -1,
     eraseHigh: 0,      // 0..1, furthest the eraser slider has swept
@@ -22,11 +53,8 @@
   const undoStack = [];
   const redoStack = [];
 
-  // ---- Helpers ----
-  const cellSize = () => CSS_SIZE / state.grid;
-
   function newBoard(fill = null) {
-    state.pixels = new Array(state.grid * state.grid).fill(fill);
+    state.pixels = new Array(COLS * ROWS).fill(fill);
   }
 
   function snapshot() {
@@ -40,46 +68,54 @@
   }
 
   // ---- Rendering ----
-  function render() {
-    const cs = cellSize();
-    ctx.clearRect(0, 0, CSS_SIZE, CSS_SIZE);
+  function drawHexPath(cx, cy) {
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) {
+      const angle = (Math.PI / 180) * 60 * i;
+      const px = cx + HEX * Math.cos(angle);
+      const py = cy + HEX * Math.sin(angle);
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+  }
 
+  function render() {
+    ctx.clearRect(0, 0, CSS_SIZE, CSS_SIZE);
     ctx.fillStyle = SCREEN_BASE;
     ctx.fillRect(0, 0, CSS_SIZE, CSS_SIZE);
 
-    for (let i = 0; i < state.pixels.length; i++) {
-      const c = state.pixels[i];
-      if (!c) continue;
-      const x = (i % state.grid) * cs;
-      const y = Math.floor(i / state.grid) * cs;
-      ctx.fillStyle = c;
-      ctx.fillRect(x, y, cs, cs);
-    }
-
-    if (state.showGrid) {
-      ctx.strokeStyle = "rgba(0,0,0,0.08)";
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      for (let i = 0; i <= state.grid; i++) {
-        const p = Math.round(i * cs) + 0.5;
-        ctx.moveTo(p, 0); ctx.lineTo(p, CSS_SIZE);
-        ctx.moveTo(0, p); ctx.lineTo(CSS_SIZE, p);
+    for (let row = 0; row < ROWS; row++) {
+      for (let col = 0; col < COLS; col++) {
+        const idx = row * COLS + col;
+        const [cx, cy] = hexCenter(col, row);
+        drawHexPath(cx, cy);
+        ctx.fillStyle = state.pixels[idx] || SCREEN_BASE;
+        ctx.fill();
+        if (state.showGrid) {
+          ctx.strokeStyle = "rgba(0,0,0,0.1)";
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
       }
-      ctx.stroke();
     }
   }
 
-  // ---- Coordinate mapping ----
+  // ---- Coordinate mapping: pixel -> hex (axial, cube-rounded) ----
   function cellFromEvent(e) {
     const rect = canvas.getBoundingClientRect();
     const scaleX = CSS_SIZE / rect.width;
     const scaleY = CSS_SIZE / rect.height;
-    const x = (e.clientX - rect.left) * scaleX;
-    const y = (e.clientY - rect.top) * scaleY;
-    const cx = Math.floor(x / cellSize());
-    const cy = Math.floor(y / cellSize());
-    if (cx < 0 || cy < 0 || cx >= state.grid || cy >= state.grid) return -1;
-    return cy * state.grid + cx;
+    const px = (e.clientX - rect.left) * scaleX - ORIGIN_X;
+    const py = (e.clientY - rect.top) * scaleY - ORIGIN_Y;
+
+    const qFrac = (2 / 3 * px) / HEX;
+    const rFrac = ((-1 / 3) * px + (SQRT3 / 3) * py) / HEX;
+    const [rx, , rz] = cubeRound(qFrac, -qFrac - rFrac, rFrac);
+
+    const col = rx;
+    const row = rz + (rx - (rx & 1)) / 2;
+    if (col < 0 || col >= COLS || row < 0 || row >= ROWS) return -1;
+    return row * COLS + col;
   }
 
   // ---- Tools ----
@@ -107,21 +143,26 @@
     render();
   }
 
-  function floodFill(idx) {
-    const target = state.pixels[idx];
+  function floodFill(startIdx) {
+    const target = state.pixels[startIdx];
     const replacement = state.color;
     if (target === replacement) return;
-    const stack = [idx];
-    const g = state.grid;
+
+    const startCol = startIdx % COLS;
+    const startRow = Math.floor(startIdx / COLS);
+    const startQ = startCol;
+    const startR = startRow - (startCol - (startCol & 1)) / 2;
+
+    const stack = [[startQ, startR]];
     while (stack.length) {
-      const i = stack.pop();
-      if (state.pixels[i] !== target) continue;
-      state.pixels[i] = replacement;
-      const x = i % g, y = Math.floor(i / g);
-      if (x > 0) stack.push(i - 1);
-      if (x < g - 1) stack.push(i + 1);
-      if (y > 0) stack.push(i - g);
-      if (y < g - 1) stack.push(i + g);
+      const [q, r] = stack.pop();
+      const col = q;
+      const row = r + (q - (q & 1)) / 2;
+      if (col < 0 || col >= COLS || row < 0 || row >= ROWS) continue;
+      const idx = row * COLS + col;
+      if (state.pixels[idx] !== target) continue;
+      state.pixels[idx] = replacement;
+      for (const [dq, dr] of DIRS) stack.push([q + dq, r + dr]);
     }
   }
 
@@ -169,10 +210,10 @@
   function sweepTo(frac) {
     if (frac <= state.eraseHigh) return;
     state.eraseHigh = frac;
-    const col = Math.floor(frac * state.grid);
-    for (let c = 0; c < col; c++) {
-      for (let r = 0; r < state.grid; r++) {
-        state.pixels[r * state.grid + c] = null;
+    const upTo = Math.floor(frac * COLS);
+    for (let c = 0; c < upTo; c++) {
+      for (let r = 0; r < ROWS; r++) {
+        state.pixels[r * COLS + c] = null;
       }
     }
     render();
