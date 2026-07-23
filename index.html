@@ -8,90 +8,23 @@
 </head>
 <body>
   <div class="app">
-    <div class="dashboard">
-      <!-- Left toolbar -->
-      <aside class="panel tools">
-        <h2 class="panel-title">Tools</h2>
-        <div class="tool-grid">
-          <button class="tool-btn active" data-tool="pen" title="Pen (B)">✏️<span>Pen</span></button>
-          <button class="tool-btn" data-tool="eraser" title="Eraser (E)">🧽<span>Eraser</span></button>
-          <button class="tool-btn" data-tool="fill" title="Fill (F)">🪣<span>Fill</span></button>
-          <button class="tool-btn" data-tool="picker" title="Eyedropper (I)">💧<span>Pick</span></button>
+    <div class="doodle">
+      <div class="doodle-top">
+        <div class="doodle-sliders">
+          <span class="slider"></span>
+          <span class="slider"></span>
         </div>
-
-        <h2 class="panel-title">Color</h2>
-        <div class="palette" id="palette"></div>
-        <label class="custom-color">
-          <span>Custom</span>
-          <input type="color" id="colorInput" value="#111111" />
-        </label>
-
-        <h2 class="panel-title">Canvas</h2>
-        <label class="field">
-          <span>Grid size</span>
-          <select id="gridSize">
-            <option value="8">8 × 8</option>
-            <option value="16" selected>16 × 16</option>
-            <option value="24">24 × 24</option>
-            <option value="32">32 × 32</option>
-            <option value="48">48 × 48</option>
-          </select>
-        </label>
-        <label class="toggle">
-          <input type="checkbox" id="gridLines" checked />
-          <span>Show grid lines</span>
-        </label>
-      </aside>
-
-      <!-- Magna Doodle -->
-      <main class="stage">
-        <div class="doodle">
-          <div class="doodle-top">
-            <div class="doodle-sliders">
-              <span class="slider"></span>
-              <span class="slider"></span>
-            </div>
-            <div class="doodle-brand">MAGNA · PIXEL</div>
-          </div>
-          <div class="doodle-screen">
-            <canvas id="board" width="512" height="512"></canvas>
-          </div>
-          <div class="doodle-bottom">
-            <button id="shakeBtn" class="shake-knob" title="Shake to erase everything">
-              <span class="knob-face">⟳</span>
-              <span class="knob-label">Shake&nbsp;to&nbsp;erase</span>
-            </button>
-          </div>
-        </div>
-      </main>
-
-      <!-- Right actions -->
-      <aside class="panel actions">
-        <h2 class="panel-title">Actions</h2>
-        <button class="action-btn" id="undoBtn">↩︎ Undo</button>
-        <button class="action-btn" id="redoBtn">↪︎ Redo</button>
-        <button class="action-btn" id="clearBtn">🗑️ Clear</button>
-
-        <h2 class="panel-title">Export</h2>
-        <label class="field">
-          <span>Scale</span>
-          <select id="exportScale">
-            <option value="1">1×</option>
-            <option value="8">8×</option>
-            <option value="16" selected>16×</option>
-            <option value="32">32×</option>
-          </select>
-        </label>
-        <button class="action-btn primary" id="exportBtn">⬇︎ Download PNG</button>
-
-        <h2 class="panel-title">Tips</h2>
-        <ul class="tips">
-          <li><b>B</b> pen · <b>E</b> eraser</li>
-          <li><b>F</b> fill · <b>I</b> pick</li>
-          <li><b>Ctrl/⌘ Z</b> undo</li>
-          <li>Click + drag to draw</li>
-        </ul>
-      </aside>
+        <div class="doodle-brand">MAGNA · PIXEL</div>
+      </div>
+      <div class="doodle-screen">
+        <canvas id="board" width="512" height="512"></canvas>
+      </div>
+      <div class="doodle-bottom">
+        <button id="shakeBtn" class="shake-knob" title="Shake to erase everything">
+          <span class="knob-face">⟳</span>
+          <span class="knob-label">Shake&nbsp;to&nbsp;erase</span>
+        </button>
+      </div>
     </div>
   </div>
 

@@ -20,11 +20,6 @@
   const undoStack = [];
   const redoStack = [];
 
-  const PALETTE = [
-    "#111111", "#ffffff", "#e23b3b", "#ff8c42", "#ffd23f", "#6ecb63",
-    "#3aa7ff", "#4dd2ff", "#8a5cff", "#ff5ea8", "#7a4a2b", "#9aa0a6",
-  ];
-
   // ---- Helpers ----
   const cellSize = () => CSS_SIZE / state.grid;
 
@@ -92,7 +87,7 @@
 
     if (state.tool === "picker") {
       const c = state.pixels[idx];
-      if (c) setColor(c);
+      if (c) state.color = c;
       return;
     }
     if (state.tool === "fill") {
@@ -147,73 +142,6 @@
   canvas.addEventListener("pointercancel", endStroke);
   window.addEventListener("blur", endStroke);
 
-  // ---- UI wiring ----
-  function setTool(tool) {
-    state.tool = tool;
-    document.querySelectorAll(".tool-btn").forEach((b) =>
-      b.classList.toggle("active", b.dataset.tool === tool));
-  }
-  document.querySelectorAll(".tool-btn").forEach((b) =>
-    b.addEventListener("click", () => setTool(b.dataset.tool)));
-
-  function setColor(color) {
-    state.color = color;
-    document.getElementById("colorInput").value = color;
-    document.querySelectorAll(".swatch").forEach((s) =>
-      s.classList.toggle("active", s.dataset.color === color));
-  }
-
-  // build palette
-  const paletteEl = document.getElementById("palette");
-  PALETTE.forEach((color) => {
-    const s = document.createElement("button");
-    s.className = "swatch";
-    s.dataset.color = color;
-    s.style.background = color;
-    s.title = color;
-    s.addEventListener("click", () => { setColor(color); if (state.tool === "eraser") setTool("pen"); });
-    paletteEl.appendChild(s);
-  });
-
-  document.getElementById("colorInput").addEventListener("input", (e) => {
-    setColor(e.target.value);
-    if (state.tool === "eraser") setTool("pen");
-  });
-
-  document.getElementById("gridSize").addEventListener("change", (e) => {
-    const newGrid = parseInt(e.target.value, 10);
-    // resample: keep drawing roughly by scaling nearest-neighbour
-    const old = state.pixels;
-    const oldGrid = state.grid;
-    const next = new Array(newGrid * newGrid).fill(null);
-    for (let y = 0; y < newGrid; y++) {
-      for (let x = 0; x < newGrid; x++) {
-        const sx = Math.floor(x * oldGrid / newGrid);
-        const sy = Math.floor(y * oldGrid / newGrid);
-        next[y * newGrid + x] = old[sy * oldGrid + sx] || null;
-      }
-    }
-    pushUndo();
-    state.grid = newGrid;
-    state.pixels = next;
-    render();
-  });
-
-  document.getElementById("gridLines").addEventListener("change", (e) => {
-    state.showGrid = e.target.checked;
-    render();
-  });
-
-  // Actions
-  document.getElementById("clearBtn").addEventListener("click", () => {
-    pushUndo();
-    newBoard(null);
-    render();
-  });
-
-  document.getElementById("undoBtn").addEventListener("click", undo);
-  document.getElementById("redoBtn").addEventListener("click", redo);
-
   function undo() {
     if (!undoStack.length) return;
     redoStack.push(snapshot());
@@ -240,30 +168,8 @@
     setTimeout(() => doodleEl.classList.remove("shaking"), 550);
   });
 
-  // Export PNG
-  document.getElementById("exportBtn").addEventListener("click", () => {
-    const scale = parseInt(document.getElementById("exportScale").value, 10);
-    const size = state.grid * scale;
-    const out = document.createElement("canvas");
-    out.width = size; out.height = size;
-    const octx = out.getContext("2d");
-    for (let i = 0; i < state.pixels.length; i++) {
-      const c = state.pixels[i];
-      if (!c) continue;
-      const x = (i % state.grid) * scale;
-      const y = Math.floor(i / state.grid) * scale;
-      octx.fillStyle = c;
-      octx.fillRect(x, y, scale, scale);
-    }
-    const link = document.createElement("a");
-    link.download = `pixel-doodle-${state.grid}x${state.grid}.png`;
-    link.href = out.toDataURL("image/png");
-    link.click();
-  });
-
-  // Keyboard shortcuts
+  // Keyboard shortcuts: B pen, E eraser, F fill, I eyedropper, Ctrl/Cmd Z undo/redo
   window.addEventListener("keydown", (e) => {
-    if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
     const mod = e.ctrlKey || e.metaKey;
     if (mod && e.key.toLowerCase() === "z") {
       e.preventDefault();
@@ -272,15 +178,14 @@
     }
     if (mod && e.key.toLowerCase() === "y") { e.preventDefault(); redo(); return; }
     switch (e.key.toLowerCase()) {
-      case "b": setTool("pen"); break;
-      case "e": setTool("eraser"); break;
-      case "f": setTool("fill"); break;
-      case "i": setTool("picker"); break;
+      case "b": state.tool = "pen"; break;
+      case "e": state.tool = "eraser"; break;
+      case "f": state.tool = "fill"; break;
+      case "i": state.tool = "picker"; break;
     }
   });
 
   // ---- Init ----
   newBoard(null);
-  setColor(state.color);
   render();
 })();
