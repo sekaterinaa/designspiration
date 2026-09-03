@@ -1,0 +1,415 @@
+/* ---------------------------------------------------------------
+   3D Glass Text Carousel
+   --------------------------------------------------------------- */
+
+:root {
+  --bg: #07070b;
+  --ink: #f4f5f8;
+  --muted: rgba(244, 245, 248, 0.44);
+
+  /* glass */
+  --glass-tint: 255, 255, 255;
+  --glass-edge: rgba(255, 255, 255, 0.34);
+
+  /* extruded text */
+  --text-depth: 38;          /* number of extrusion layers */
+  --text-step: 1.25px;       /* z-distance between layers */
+  --text-shift-x: -0.42px;   /* lateral drift per layer, so the bevel */
+  --text-shift-y: 0.42px;    /* reads even when a panel is square-on */
+  --text-side-top: #949cdd;  /* extrusion nearest the face */
+  --text-side-bottom: #14162a;
+
+  --panel-w: clamp(224px, 26vw, 310px);
+  --panel-h: clamp(300px, 32vw, 384px);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Archivo', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* --- ambient backdrop ------------------------------------------------ */
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.55;
+  will-change: transform;
+}
+
+.blob--a {
+  width: 46vmax; height: 46vmax;
+  left: -10vmax; top: -12vmax;
+  background: radial-gradient(circle at 50% 50%, #3b4cf0, transparent 68%);
+  animation: drift 26s ease-in-out infinite;
+}
+
+.blob--b {
+  width: 40vmax; height: 40vmax;
+  right: -12vmax; top: 8vmax;
+  background: radial-gradient(circle at 50% 50%, #d63ba0, transparent 68%);
+  animation: drift 32s ease-in-out infinite reverse;
+}
+
+.blob--c {
+  width: 52vmax; height: 52vmax;
+  left: 28vmax; bottom: -26vmax;
+  background: radial-gradient(circle at 50% 50%, #10b3c8, transparent 70%);
+  animation: drift 38s ease-in-out infinite;
+}
+
+@keyframes drift {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  33%      { transform: translate3d(6vmax, 4vmax, 0) scale(1.12); }
+  66%      { transform: translate3d(-5vmax, -3vmax, 0) scale(0.94); }
+}
+
+.grain {
+  position: absolute;
+  inset: -50%;
+  opacity: 0.16;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* --- chrome ---------------------------------------------------------- */
+
+.masthead {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 22px 26px;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.masthead__dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #6ee7c8;
+  box-shadow: 0 0 12px #6ee7c8;
+}
+
+.page {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+}
+
+/* --- stage ----------------------------------------------------------- */
+
+.carousel {
+  position: relative;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  perspective: 1500px;
+  perspective-origin: 50% 46%;
+  touch-action: pan-y;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  outline: none;
+}
+
+.carousel.is-dragging { cursor: grabbing; }
+
+.carousel:focus-visible .stage__ring { outline: 1px dashed rgba(255,255,255,.28); outline-offset: 26px; }
+
+.stage {
+  position: relative;
+  width: var(--panel-w);
+  height: var(--panel-h);
+  transform-style: preserve-3d;
+  transform: rotateX(var(--tilt, 9deg));
+}
+
+.stage__ring {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transform: translateZ(calc(var(--radius, 0px) * -0.6)) rotateY(var(--rot, 0deg));
+  will-change: transform;
+}
+
+/* floor glow beneath the cylinder */
+.stage__floor {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 190%;
+  height: 42%;
+  transform: translate3d(-50%, -6%, 0) rotateX(84deg);
+  background: radial-gradient(ellipse at 50% 50%, rgba(150, 170, 255, 0.3), transparent 66%);
+  filter: blur(22px);
+  pointer-events: none;
+}
+
+/* --- panels ---------------------------------------------------------- */
+
+.panel {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transform: rotateY(calc(var(--angle) * 1deg)) translateZ(var(--radius));
+  backface-visibility: visible;
+  /* No opacity or filter on this element: either one would flatten the
+     preserve-3d context and collapse the extrusion inside it. Depth cues
+     are applied to the leaf elements instead, driven by --front. */
+}
+
+.panel__glass {
+  position: absolute;
+  inset: 0;
+  border-radius: 22px;
+  overflow: hidden;
+  border: 1px solid var(--glass-edge);
+  background:
+    linear-gradient(150deg,
+      rgba(var(--glass-tint), 0.16) 0%,
+      rgba(var(--glass-tint), 0.04) 38%,
+      rgba(var(--glass-tint), 0.02) 62%,
+      rgba(var(--glass-tint), 0.12) 100%);
+  backdrop-filter: blur(9px) saturate(150%);
+  -webkit-backdrop-filter: blur(9px) saturate(150%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.14),
+    0 26px 60px rgba(0, 0, 0, 0.5);
+  opacity: calc(0.3 + var(--front, 1) * 0.7);
+  filter: blur(calc((1 - var(--front, 1)) * 2.2px));
+}
+
+/* moving specular sheen */
+.panel__sheen {
+  position: absolute;
+  inset: -40%;
+  background: linear-gradient(
+    100deg,
+    transparent 38%,
+    rgba(255, 255, 255, 0.32) 48%,
+    rgba(255, 255, 255, 0.06) 55%,
+    transparent 62%
+  );
+  transform: translateX(calc(var(--facing, 0) * -34%));
+  opacity: calc(0.28 + var(--front, 0) * 0.5);
+}
+
+/* frosted inner rim */
+.panel__rim {
+  position: absolute;
+  inset: 9px;
+  border-radius: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  pointer-events: none;
+  opacity: calc(0.3 + var(--front, 1) * 0.7);
+}
+
+.panel__index {
+  backface-visibility: hidden;
+  position: absolute;
+  left: 18px;
+  bottom: 14px;
+  transform: translateZ(6px);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  color: rgba(255, 255, 255, 0.4);
+  opacity: var(--front, 1);
+}
+
+.panel__tag {
+  backface-visibility: hidden;
+  position: absolute;
+  right: 18px;
+  top: 16px;
+  transform: translateZ(6px);
+  font-size: 10px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.3);
+  opacity: var(--front, 1);
+}
+
+/* --- the extruded 3D word ------------------------------------------- */
+
+.word {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  transform-style: preserve-3d;
+  /* lift the type out of the glass card */
+  transform: translateZ(24px);
+  padding: 0 14px;
+  backface-visibility: hidden;
+}
+
+.word__stack {
+  position: relative;
+  transform-style: preserve-3d;
+  font-weight: 900;
+  font-size: clamp(30px, 8.4vw, 60px);
+  line-height: 0.94;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+  text-align: center;
+  white-space: nowrap;
+  backface-visibility: hidden;
+}
+
+/* every extrusion slice sits behind the face at its own depth */
+.word__layer {
+  position: absolute;
+  inset: 0;
+  transform: translate3d(
+    calc(var(--i) * var(--text-shift-x)),
+    calc(var(--i) * var(--text-shift-y)),
+    calc(var(--i) * var(--text-step) * -1)
+  );
+  backface-visibility: hidden;
+  opacity: calc(0.18 + var(--front, 1) * 0.82);
+  color: color-mix(in srgb, var(--text-side-top), var(--text-side-bottom) calc(var(--i) / var(--text-depth) * 100%));
+  -webkit-text-stroke: 0.5px currentColor;
+}
+
+/* the lit front face */
+.word__face {
+  position: relative;
+  background: linear-gradient(178deg, #ffffff 6%, #cfd6ff 42%, #8f9bd8 64%, #ffffff 96%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 2px 10px rgba(120, 150, 255, 0.45));
+  opacity: calc(0.18 + var(--front, 1) * 0.82);
+}
+
+/* --- readout / dock -------------------------------------------------- */
+
+.readout {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  padding: 4px 20px 6px;
+}
+
+.readout__word {
+  margin: 0;
+  font-size: clamp(13px, 2.4vw, 15px);
+  font-weight: 600;
+  letter-spacing: 0.4em;
+  text-indent: 0.4em;
+  text-transform: uppercase;
+}
+
+.readout__hint {
+  margin: 8px 0 0;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.dock {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 18px 20px 30px;
+}
+
+.dock__btn {
+  width: 42px; height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: var(--ink);
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+}
+
+.dock__btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.34);
+  transform: translateY(-1px);
+}
+
+.dock__btn:active { transform: translateY(0) scale(0.96); }
+
+.dock__btn svg {
+  width: 18px; height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.dock__dots {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.dot {
+  width: 6px; height: 6px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.22);
+  cursor: pointer;
+  transition: width 0.28s cubic-bezier(.22,1,.36,1), background 0.28s ease;
+}
+
+.dot.is-active {
+  width: 22px;
+  border-radius: 3px;
+  background: #ffffff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .blob { animation: none; }
+}
+
+@media (max-width: 520px) {
+  .carousel { perspective: 1050px; }
+  .word { transform: translateZ(22px); }
+  :root { --text-step: 1.4px; --text-shift-x: -0.5px; --text-shift-y: 0.5px; }
+}
