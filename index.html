@@ -3,76 +3,48 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>3D Glass Text Carousel</title>
-<meta name="description" content="A rotating 3D glass carousel with extruded text panels." />
+<title>Text Orbit</title>
+<meta name="description" content="A word running around a 3D ring, passing behind the object at its centre." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800;900&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="./styles.css" />
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="./orbit.css" />
 </head>
 <body>
-  <div class="backdrop" aria-hidden="true">
-    <span class="blob blob--a"></span>
-    <span class="blob blob--b"></span>
-    <span class="blob blob--c"></span>
-    <span class="grain"></span>
+  <div class="frame">
+    <div class="bar bar--top"></div>
+
+    <div class="stage" id="stage" tabindex="0">
+      <div class="orbit" id="orbit" data-text="DYNAMIC" data-repeat="3">
+        <!-- Centre object slot. Replace the contents of this element with
+             your own object — keep the [data-object] attribute and the
+             .orbit__object class, which pin it to z = 0 so the ring passes
+             behind it. -->
+        <div class="orbit__object" data-object>
+          <div class="placeholder">object</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bar bar--bottom"></div>
+
+    <p class="hint">drag to spin</p>
+
+    <div class="controls">
+      <label class="field">
+        <span class="field__label">word</span>
+        <input id="word" type="text" value="DYNAMIC" maxlength="14"
+               spellcheck="false" autocomplete="off" aria-label="Orbiting word" />
+      </label>
+    </div>
   </div>
 
-  <header class="masthead">
-    <span class="masthead__dot"></span>
-    <span class="masthead__label">3D Glass Text Carousel</span>
-  </header>
-
-  <main class="page">
-    <div
-      class="carousel"
-      id="carousel"
-      data-words="DESIGN, MOTION, GLASS, DEPTH, LIGHT, RHYTHM, TEXTURE, FORM"
-      data-autoplay="true"
-      data-tilt="9"
-    ></div>
-
-    <div class="readout">
-      <p class="readout__word" id="readout">DESIGN</p>
-      <p class="readout__hint">drag &nbsp;·&nbsp; scroll &nbsp;·&nbsp; arrow keys</p>
-    </div>
-  </main>
-
-  <footer class="dock" id="dock">
-    <button class="dock__btn" type="button" data-nav="prev" aria-label="Previous">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7"/></svg>
-    </button>
-    <div class="dock__dots" id="dots" role="tablist" aria-label="Slides"></div>
-    <button class="dock__btn" type="button" data-nav="next" aria-label="Next">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg>
-    </button>
-  </footer>
-
-  <script src="./carousel.js"></script>
+  <script src="./orbit.js"></script>
   <script>
-    const carousel = new GlassTextCarousel(document.getElementById('carousel'));
-    const readout = document.getElementById('readout');
-    const dots = document.getElementById('dots');
-
-    carousel.words.forEach((word, i) => {
-      const dot = document.createElement('button');
-      dot.type = 'button';
-      dot.className = 'dot';
-      dot.setAttribute('role', 'tab');
-      dot.setAttribute('aria-label', word);
-      dot.addEventListener('click', () => carousel.goTo(i));
-      dots.append(dot);
-    });
-
-    carousel.onChange((index, word) => {
-      readout.textContent = word;
-      [...dots.children].forEach((d, i) => d.classList.toggle('is-active', i === index));
-    });
-
-    document.querySelectorAll('[data-nav]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        btn.dataset.nav === 'next' ? carousel.next() : carousel.prev();
-      });
+    const orbit = new TextOrbit('#orbit');
+    const input = document.getElementById('word');
+    input.addEventListener('input', () => {
+      orbit.setText((input.value || ' ').toUpperCase());
     });
   </script>
 </body>

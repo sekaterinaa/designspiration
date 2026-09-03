@@ -1,99 +1,105 @@
-# 3D Glass Text Carousel
+# Text Orbit
 
-A rotating cylinder of frosted-glass panels — like the Framer *3D Glass Carousel*,
-but each panel carries an **extruded 3D word** instead of an image.
+A word running around a 3D ring, passing **behind** whatever object sits at the
+centre. Chunky glossy type with chromatic striped extrusion.
 
 No dependencies, no build step. Open `index.html`.
 
-![front](docs/preview.jpg)
+![preview](docs/orbit.jpg)
 
-## How the 3D works
+## Dropping in your own object
 
-Two things make it read as a solid object rather than a set of flat cards:
+The centre object is yours — the component keeps whatever you mark with
+`[data-object]` and builds the ring around it:
 
-**The cylinder.** Panels are laid out with `rotateY(i * step) translateZ(radius)`
-inside a `preserve-3d` ring, where the radius is derived so N panels of the given
-width seat evenly around the axis:
-
-```
-radius = (panelWidth / 2) / tan(π / N) * gap
-```
-
-The ring is then pushed back by `translateZ(-0.6 * radius)` so the nearest panel
-sits close to the projection plane and isn't magnified out of frame.
-
-**The type.** Each word is a stack of ~38 copies of itself, every copy offset a
-little further back in Z *and* a little down-and-left in X/Y:
-
-```css
-transform: translate3d(
-  calc(var(--i) * var(--text-shift-x)),
-  calc(var(--i) * var(--text-shift-y)),
-  calc(var(--i) * var(--text-step) * -1)
-);
+```html
+<div class="orbit" data-text="DYNAMIC" data-repeat="3">
+  <div class="orbit__object" data-object>
+    <img src="floppy.png" alt="" />
+  </div>
+</div>
 ```
 
-The slices shade from a lit edge near the face to near-black at the back, so they
-form real extruded sides. The Z component means the extrusion parallaxes correctly
-as a panel turns; the X/Y drift means the bevel still reads when a panel is square
-to the camera.
+```js
+new TextOrbit('.orbit');
+```
+
+The slot is pinned at `z = 0`, the letters sit at `±radius`, and all of them
+share one `preserve-3d` context — so the browser sorts them by depth on its own.
+Letters on the far side of the circle are drawn behind your object, letters on
+the near side in front, with no z-index bookkeeping. The component sets
+`--object-size` on the slot from the ring radius; ignore it and size the object
+yourself if you'd rather.
+
+## How the type is built
+
+Each letter is a stack of ~26 copies of itself, each pushed a little further back
+in Z. The slices cycle through a stripe palette (`band` slices per colour), which
+is what produces the chromatic extruded sides:
+
+```js
+stripes: ['#ff2e9f', '#ffd62b', '#22d3ee', '#ff7a29', '#ffffff', '#4ade80']
+```
+
+Letters are placed round the rim with an arc proportional to each glyph's real
+width, so spacing stays even instead of stepping by a fixed angle. The radius
+follows from the text itself — the run of letters wraps the circumference exactly
+once:
+
+```
+radius = totalTextWidth * spread / 2π
+```
+
+So a longer word, more repeats, or a bigger font all grow the ring.
 
 ### One thing to know if you edit this
 
-Nothing may set `opacity` or `filter` on `.panel`. Either property flattens the
-`preserve-3d` context and collapses the extrusion inside it into a single plane.
-Depth cues (dimming, blur on distant glass) are applied to the **leaf** elements
-instead, driven by a `--front` custom property that JS writes on each panel every
-frame.
+Nothing may set `opacity` or `filter` on `.char`. Either property flattens the
+`preserve-3d` context and collapses that letter's extrusion into a single plane.
+The far half of the ring is faded through a `--front` custom property that JS
+writes on each letter per frame, which the **leaf** elements read.
 
-## Usage
+## Options
 
-```html
-<link rel="stylesheet" href="styles.css" />
-<div id="ring" data-words="DESIGN, MOTION, GLASS, DEPTH"></div>
-<script src="carousel.js"></script>
-<script>
-  const c = new GlassTextCarousel('#ring');
-  c.onChange((index, word) => console.log(index, word));
-</script>
-```
-
-Options can be passed as a second argument or as `data-` attributes
-(`data-words`, `data-autoplay`, `data-tilt`, `data-gap`, `data-depth`):
+Pass as a second argument, or as `data-` attributes (`data-text`, `data-repeat`,
+`data-separator`, `data-speed`, `data-tilt`, `data-spread`, `data-depth`):
 
 | Option | Default | What it does |
 | --- | --- | --- |
-| `words` | 6 sample words | The words on the panels; one panel per word |
-| `autoplay` | `true` | Slow idle spin, resuming after `idleDelay` |
-| `autoSpeed` | `0.09` | Degrees per frame while idling |
-| `tilt` | `9` | Camera tilt in degrees |
-| `gap` | `1.22` | `>1` pushes panels further from the axis |
-| `depth` | `38` | Extrusion slices per word |
-| `sensitivity` | `0.34` | Degrees of spin per pixel dragged |
-| `friction` | `0.945` | Inertia decay after a flick |
-| `idleDelay` | `2600` | Milliseconds of stillness before autoplay resumes |
+| `text` | `'DYNAMIC'` | The orbiting word |
+| `repeat` | `3` | Times the word goes round the ring |
+| `separator` | `' • '` | Set `''` to butt the repeats together |
+| `speed` | `0.22` | Degrees per frame |
+| `tilt` | `-7` | Ring tilt in degrees |
+| `spread` | `1` | `>1` opens gaps between letters, `<1` crowds them |
+| `depth` | `26` | Extrusion slices per letter |
+| `band` | `3` | Slices per colour stripe |
+| `objectScale` | `0.8` | Centre object size, relative to ring radius |
+| `stripes` | 6 colours | The extrusion palette |
 
-Methods: `next()`, `prev()`, `goTo(index)`, `onChange(fn)`, `destroy()`.
+Methods: `setText(word)` swaps the word and re-lays the ring without a rebuild;
+`destroy()` tears it down.
 
-## Interaction
-
-Drag or swipe to spin, flick for inertia, scroll to nudge, arrow keys to step.
-Motion settles by snapping to the nearest panel. Autoplay pauses on hover and
-while the pointer is down, and is disabled entirely under
-`prefers-reduced-motion: reduce`.
+Drag to spin with momentum; let go and it resumes its own rotation. Motion is
+delta-time normalised, so it runs at the same rate on 60Hz and 120Hz, and
+`prefers-reduced-motion: reduce` stops the idle spin.
 
 ## Styling
 
-Most of the look is in custom properties at the top of `styles.css`: `--glass-tint`
-and `--glass-edge` for the panels, `--text-side-top` / `--text-side-bottom` for the
-extrusion shading, `--text-step` and `--text-shift-x/y` for how deep and in which
-direction the type extrudes, and `--panel-w` / `--panel-h` for card size.
+Colours and type live in custom properties at the top of `orbit.css`: `--cream`
+for the ground, `--face-top` / `--face-mid` / `--face-bottom` for the glossy
+letter faces, `--depth-step` for how far the extrusion reaches, `--type-size` for
+the letters, and `--letterbox` for the black bars.
 
-Long words are scaled down automatically to fit their card — the fit runs on load,
-on resize, and again once web fonts have settled.
+## Also in here
+
+`glass-carousel.html` is an earlier take — a rotating cylinder of frosted-glass
+panels carrying extruded 3D words. Same extrusion technique, different world.
+
+![glass carousel](docs/glass-carousel.jpg)
 
 ## Browser support
 
-Needs `transform-style: preserve-3d` and `color-mix()` — Chrome/Edge 111+,
-Safari 16.2+, Firefox 113+. `backdrop-filter` provides the frost; without it the
-panels fall back to their gradient tint and still work.
+Needs `transform-style: preserve-3d` — Chrome/Edge, Safari 16+, Firefox. Depth
+sorting between the ring and the centre object relies on the browser compositing
+one shared 3D context, which all current engines do.
