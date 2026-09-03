@@ -50,7 +50,22 @@ once:
 radius = totalTextWidth * spread / 2π
 ```
 
-So a longer word, more repeats, or a bigger font all grow the ring.
+So a longer phrase, more repeats, or a bigger font all grow the ring — then two
+fits pull it back into the stage. `maxRadius` caps the ring against the container,
+and `arc` caps how wide the magnified front of the ring may run, which is the one
+that matters for a long phrase: perspective enlarges the near letters, so a
+sentence can overflow sideways while only a few letters are legible. Because each
+letter's arc is proportional to its glyph width, scaling the type scales the
+radius by the same factor and leaves the angles untouched — so a single scale
+satisfies both fits, and the component solves for it on load, on resize, and on
+every `setText`.
+
+### Reading a long phrase
+
+Only the front of the ring faces you, so roughly a third of the text is legible
+at a time — the rest arrives as it turns. `repeat` is the dial: `1` gives big
+chunky letters showing about a third of a sentence, `2` halves the type and shows
+closer to two thirds. Pick by whether the phrase is a headline or a ticker.
 
 ### One thing to know if you edit this
 
@@ -66,8 +81,8 @@ Pass as a second argument, or as `data-` attributes (`data-text`, `data-repeat`,
 
 | Option | Default | What it does |
 | --- | --- | --- |
-| `text` | `'DYNAMIC'` | The orbiting word |
-| `repeat` | `3` | Times the word goes round the ring |
+| `text` | `'YOUR SOFTWARE GROWS WITH YOU'` | The orbiting text |
+| `repeat` | `1` | Times the text goes round the ring |
 | `separator` | `' • '` | Set `''` to butt the repeats together |
 | `speed` | `0.22` | Degrees per frame |
 | `tilt` | `-7` | Ring tilt in degrees |
@@ -75,6 +90,8 @@ Pass as a second argument, or as `data-` attributes (`data-text`, `data-repeat`,
 | `depth` | `26` | Extrusion slices per letter |
 | `band` | `3` | Slices per colour stripe |
 | `objectScale` | `0.8` | Centre object size, relative to ring radius |
+| `maxRadius` | `0.46` | Biggest the ring may get, as a fraction of the stage |
+| `arc` | `0.4` | Share of the text that should read across the stage |
 | `stripes` | 6 colours | The extrusion palette |
 
 Methods: `setText(word)` swaps the word and re-lays the ring without a rebuild;

@@ -11,8 +11,8 @@
  */
 class TextOrbit {
   static defaults = {
-    text: 'DYNAMIC',
-    repeat: 3,            // times the word goes round the ring
+    text: 'YOUR SOFTWARE GROWS WITH YOU',
+    repeat: 1,            // times the text goes round the ring
     separator: ' • ',     // set '' to butt the repeats together
     speed: 0.22,          // degrees per 60fps frame
     tilt: -7,             // ring tilt in degrees
@@ -20,6 +20,8 @@ class TextOrbit {
     depth: 26,            // extrusion slices per letter
     band: 3,              // slices per colour stripe
     objectScale: 0.8,     // centre object size, relative to ring radius
+    maxRadius: 0.46,      // biggest the ring may get, as a fraction of the stage
+    arc: 0.4,             // share of the text that should read across the stage
     sensitivity: 0.3,     // degrees of spin per pixel dragged
     friction: 0.94,
     // Chromatic stripes down the extruded sides, front-most first.
@@ -135,12 +137,40 @@ class TextOrbit {
   #layout() {
     if (!this.chars?.length) return;
 
+    this.el.style.setProperty('--type-scale', 1);
     const widths = this.chars.map((c) => c.offsetWidth);
     const total = widths.reduce((a, b) => a + b, 0);
     if (!total) return;
 
     // The text wraps the circumference exactly once: 2πr = total width.
-    const radius = (total * this.opts.spread) / (2 * Math.PI);
+    const raw = (total * this.opts.spread) / (2 * Math.PI);
+
+    // Letter arcs are proportional to glyph widths, so scaling the type
+    // scales the radius by the same factor and leaves the angles untouched.
+    // That lets a single scale satisfy both fits below.
+    const box = this.el.getBoundingClientRect();
+    const stage = this.el.closest('.stage') || this.el;
+    const persp = parseFloat(getComputedStyle(stage).perspective) || 760;
+
+    // 1. The ring itself has to fit the stage.
+    const limit = Math.max(140, Math.min(box.width, box.height) * this.opts.maxRadius);
+    let fit = Math.min(1, limit / raw);
+
+    // 2. The front of the ring is magnified by perspective, so a long phrase
+    //    can still overflow sideways with only a few letters legible. Shrink
+    //    until the readable front arc spans the stage rather than overrunning
+    //    it. Magnification falls as the type shrinks, so this converges.
+    const want = box.width * 0.86;
+    for (let i = 0; i < 8; i++) {
+      const r = raw * fit;
+      const mag = persp / Math.max(persp - r, persp * 0.3);
+      const front = total * this.opts.spread * fit * this.opts.arc * mag;
+      if (front <= want) break;
+      fit *= want / front;
+    }
+
+    this.el.style.setProperty('--type-scale', fit.toFixed(4));
+    const radius = raw * fit;
     this.radius = radius;
 
     let walked = 0;

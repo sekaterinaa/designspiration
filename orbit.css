@@ -97,7 +97,7 @@ body {
   transform-style: preserve-3d;
   /* --a places the letter round the ring, --r pushes it out to the rim */
   transform: translate(-50%, -50%) rotateY(var(--a)) translateZ(var(--r));
-  font-size: var(--type-size);
+  font-size: calc(var(--type-size) * var(--type-scale, 1));
   font-weight: 600;
   line-height: 1;
   letter-spacing: -0.01em;
@@ -204,7 +204,8 @@ body {
 }
 
 .field input {
-  width: 13ch;
+  width: 26ch;
+  max-width: 42vw;
   padding: 4px 10px;
   border: 0;
   border-radius: 999px;
