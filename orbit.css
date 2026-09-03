@@ -54,7 +54,7 @@ body {
   place-items: center;
   min-height: 0;
   overflow: hidden;
-  perspective: 760px;
+  perspective: 760px; /* replaced at runtime, scaled to the ring */
   perspective-origin: 50% 50%;
   cursor: grab;
   user-select: none;
@@ -112,7 +112,7 @@ body {
   position: absolute;
   inset: 0;
   transform: translateZ(calc(var(--i) * var(--depth-step) * -1));
-  opacity: calc(0.32 + var(--front, 1) * 0.68);
+  opacity: calc(0.3 + var(--front, 1) * 0.7);
 }
 
 .char__face {
@@ -126,7 +126,7 @@ body {
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  opacity: calc(0.32 + var(--front, 1) * 0.68);
+  opacity: calc(0.3 + var(--front, 1) * 0.7);
 }
 
 /* --- the centre object ------------------------------------------------ */

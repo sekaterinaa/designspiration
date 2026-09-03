@@ -12,16 +12,19 @@
 class TextOrbit {
   static defaults = {
     text: 'YOUR SOFTWARE GROWS WITH YOU',
-    repeat: 1,            // times the text goes round the ring
+    repeat: 2,            // times the text goes round the ring
     separator: ' • ',     // set '' to butt the repeats together
+    sweep: 360,           // degrees of the circle the text occupies
     speed: 0.22,          // degrees per 60fps frame
+    start: -22,           // opening rotation, for an asymmetric first frame
     tilt: -7,             // ring tilt in degrees
     spread: 1,            // >1 opens gaps between letters, <1 crowds them
     depth: 26,            // extrusion slices per letter
     band: 3,              // slices per colour stripe
-    objectScale: 0.8,     // centre object size, relative to ring radius
-    maxRadius: 0.46,      // biggest the ring may get, as a fraction of the stage
-    arc: 0.4,             // share of the text that should read across the stage
+    objectScale: 0.55,    // centre object size, relative to ring radius
+    ringScale: 0.55,      // ring radius, as a fraction of the stage
+    maxScale: 1.4,        // ceiling on type scale, so short text can't balloon
+    perspective: 3,       // perspective distance, as a multiple of the radius
     sensitivity: 0.3,     // degrees of spin per pixel dragged
     friction: 0.94,
     // Chromatic stripes down the extruded sides, front-most first.
@@ -35,7 +38,7 @@ class TextOrbit {
     this.opts = { ...TextOrbit.defaults, ...this.#readDataset(), ...options };
     this.reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    this.rot = 0;
+    this.rot = this.opts.start;
     this.vel = 0;
     this.dragging = false;
 
@@ -84,6 +87,7 @@ class TextOrbit {
     if (d.text) out.text = d.text;
     if (d.repeat) out.repeat = parseInt(d.repeat, 10);
     if (d.separator !== undefined) out.separator = d.separator;
+    if (d.sweep) out.sweep = parseFloat(d.sweep);
     if (d.speed) out.speed = parseFloat(d.speed);
     if (d.tilt) out.tilt = parseFloat(d.tilt);
     if (d.spread) out.spread = parseFloat(d.spread);
@@ -93,8 +97,12 @@ class TextOrbit {
 
   #buildChars() {
     this.ring.innerHTML = '';
-    const unit = this.opts.text + this.opts.separator;
-    const run = unit.repeat(Math.max(1, this.opts.repeat));
+    const n = Math.max(1, this.opts.repeat);
+    // A full circle closes on itself, so it needs a separator after the last
+    // repeat too; a partial sweep has two loose ends and does not.
+    const run = this.opts.sweep >= 360
+      ? (this.opts.text + this.opts.separator).repeat(n)
+      : Array(n).fill(this.opts.text).join(this.opts.separator);
 
     this.chars = [...run].map((ch) => {
       const el = document.createElement('div');
@@ -142,40 +150,35 @@ class TextOrbit {
     const total = widths.reduce((a, b) => a + b, 0);
     if (!total) return;
 
-    // The text wraps the circumference exactly once: 2πr = total width.
-    const raw = (total * this.opts.spread) / (2 * Math.PI);
-
-    // Letter arcs are proportional to glyph widths, so scaling the type
-    // scales the radius by the same factor and leaves the angles untouched.
-    // That lets a single scale satisfy both fits below.
-    const box = this.el.getBoundingClientRect();
+    // The ring size is a stage-relative design choice; the length of arc it
+    // offers then sets the type size. (Deriving the radius from the text
+    // instead would pin the type to whatever the phrase happened to need.)
     const stage = this.el.closest('.stage') || this.el;
-    const persp = parseFloat(getComputedStyle(stage).perspective) || 760;
+    const box = stage.getBoundingClientRect();
+    const sweep = (this.opts.sweep * Math.PI) / 180;
+    let radius = Math.max(120, Math.min(box.width, box.height * 1.9) * this.opts.ringScale);
 
-    // 1. The ring itself has to fit the stage.
-    const limit = Math.max(140, Math.min(box.width, box.height) * this.opts.maxRadius);
-    let fit = Math.min(1, limit / raw);
-
-    // 2. The front of the ring is magnified by perspective, so a long phrase
-    //    can still overflow sideways with only a few letters legible. Shrink
-    //    until the readable front arc spans the stage rather than overrunning
-    //    it. Magnification falls as the type shrinks, so this converges.
-    const want = box.width * 0.86;
-    for (let i = 0; i < 8; i++) {
-      const r = raw * fit;
-      const mag = persp / Math.max(persp - r, persp * 0.3);
-      const front = total * this.opts.spread * fit * this.opts.arc * mag;
-      if (front <= want) break;
-      fit *= want / front;
+    let fit = (radius * sweep) / (total * this.opts.spread);
+    if (fit > this.opts.maxScale) {
+      // Short text would otherwise blow up to fill the arc. Hold the type and
+      // pull the ring in instead, which keeps the sweep exact.
+      fit = this.opts.maxScale;
+      radius = (total * this.opts.spread * fit) / sweep;
     }
 
     this.el.style.setProperty('--type-scale', fit.toFixed(4));
-    const radius = raw * fit;
     this.radius = radius;
 
+    // Tie the camera to the ring so the nearest letters are magnified by the
+    // same amount whatever size the ring ends up.
+    stage.style.perspective = `${Math.round(radius * this.opts.perspective)}px`;
+
+    // Centre the run on the front of the ring, so it starts readable and
+    // sweeps behind the object as it turns.
     let walked = 0;
     this.angles = this.chars.map((c, i) => {
-      const angle = ((walked + widths[i] / 2) / total) * 360;
+      const angle = -this.opts.sweep / 2
+        + ((walked + widths[i] / 2) / total) * this.opts.sweep;
       c.style.setProperty('--a', `${angle}deg`);
       c.style.setProperty('--r', `${radius}px`);
       walked += widths[i];
